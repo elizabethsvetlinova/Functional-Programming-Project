@@ -1,46 +1,4 @@
 #lang racket
-(define empty-tree '())
-(define root car)
-(define childrens cdr)
-(define (make-tree root childrens)
-	(list root childrens))
-(define mine-tree
-  (make-tree '("/") '( ("C:")
-                       ("D:"))))
-(define (add-child v t)
-  (list (root t) (append (cadr t) (list v))))
-
-;(add-child '("E:") mine-tree)
-
-;(define dir '(("/")
- ;             (
-  ;             (("C:")(
-   ;                    ("ProgramFiles")
-    ;                   ("Users")))
-     ;          (("D:")(
-      ;                 (("Music") (
-       ;                            (("Music1") ("mv1.mp4"))
-        ;                           ("Music2")))
-         ;              ("Movies")
-          ;             ("Pictures")))
-           ;    ("E:")
-        ;       )
-         ;     ))
-(define inpt "//C:/Users/")
-
-(define (get-path-from-input inpt)
-  (string-split inpt  "/" #:repeat? #t #:trim? #t ))
-;(member '("/") dir)
-(define path (get-path-from-input inpt))
-
-
-;(define (cd path dir)
- ; (cond ((null? path) dir)
-  ;      ((null? dir) '())
-   ;     ((equal?(car path) (root dir)) dir)
-    ;    ((member (list (car path)) (car (childrens dir))) (member (list (car path)) (car (childrens dir))))
-     ;   (cd path (childrens dir))))
-
 (define d '("/"
             "/"
             (
@@ -56,7 +14,7 @@
                                  (
                                   ("/u/walsh/test" "test"
                                                    (
-                                                    ("/u/walsh/test" "file.txt" "some text")
+                                                    ("/u/walsh/test/file.txt" "file.txt" "some text")
                                                     ))
                                   ))
                       
@@ -69,10 +27,10 @@
 (define content caddr)
 
 (define (get-full-path-foreach-content dir)
-  (map full-path (content d)))
+  (map full-path (content dir)))
 
 (define (get-names-foreach-content dir)
-  (map name (content d)))
+  (map name (content dir)))
 
 (define (make-full-path dir n)
   (cond ((equal? (full-path dir) "/") (string-append (full-path dir) n))
@@ -117,7 +75,7 @@
 ;'("/u"
   ;"u"
   ;(("/u/smith" "smith" ())
-   ;("/u/walsh" "walsh" (("/u/walsh/test" "test" (("/u/walsh/test" "file.txt" "some text")))))))
+   ;("/u/walsh" "walsh" (("/u/walsh/test" "test" (("/u/walsh/test.txt" "file.txt" "some text")))))))
 (define (get-child-by-name dir n)
 (if (not(null?
          (filter (lambda (x)(if (equal? (name x) n) x #f)) (content dir)))  )
@@ -172,15 +130,22 @@
         (else (get-child-by-name current next))))
 
 
-(define (cd dir current input-list)
+(define (cd-list dir current input-list)
   (let ([next-folder (car input-list)] )
   (cond ((equal? next-folder "..") (get-parent dir current ))
         ((equal? (string-ref next-folder 0) #\/)
          (get-by-listed-path dir input-list))
         (else (get-childs-by-path current input-list)))))
          
-
-
+;> (cd d c "/u/walsh/test/file.txt")
+;#f
+;> (cd d c "/u/walsh/test/")
+;'("/u/walsh/test" "test" (("/u/walsh/test/file.txt" "file.txt" "some text")))
+;> (cd d c "../u")
+ 
+(define (cd dir current input)
+(let ([result (cd-list dir current (split-input input))])
+  (if (is-file? result) #f result)))
 
 
 
