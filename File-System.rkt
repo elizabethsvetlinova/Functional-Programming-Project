@@ -1,4 +1,22 @@
 #lang racket
+
+(define full-path car)   ;Full path to folder/file
+(define name cadr)       ;Name of the folder/file
+(define content caddr)   ;Content of the folder/file
+
+
+(define (is-folder? el)
+  (and (not ( null? (full-path el)))
+       (not( null? (name el)))
+       (not( null? (content el)))
+       (and (list? (content el)))))
+
+(define (is-file? el)
+  (and (not ( null? (full-path el)))
+       (not( null? (name el)))
+       (not( null? (content el)))
+       (and (string? (content el)))))
+
 (define d '("/"
             "/"
             (
@@ -21,16 +39,17 @@
                      ))
 
              )))
+(define p "/u/walsh")
+(define c (cadr (content d)))
 
-(define full-path car)
-(define name cadr)
-(define content caddr)
+
 
 (define (get-full-path-foreach-content dir)
   (map full-path (content dir)))
 
 (define (get-names-foreach-content dir)
   (map name (content dir)))
+
 
 (define (make-full-path dir n)
   (cond ((equal? (full-path dir) "/") (string-append (full-path dir) n))
@@ -49,20 +68,9 @@
                      c)))))
 
 
-(define (is-folder? el)
-  (and (not ( null? (full-path el)))
-       (not( null? (name el)))
-       (not( null? (content el)))
-       (and (list? (content el)))))
-
-(define (is-file? el)
-  (and (not ( null? (full-path el)))
-       (not( null? (name el)))
-       (not( null? (content el)))
-       (and (string? (content el)))))
 
 
-(define p "/u/walsh")
+
 
 
 (define (split-input input)
@@ -94,24 +102,23 @@
 
 ;(get-by-path d "/u/walsh")
 ;'("/u/walsh" "walsh" (("/u/walsh/test" "test" (("/u/walsh/test" "file.txt" "some text")))))
-(define (get-by-path dir p)
-  (cond ((equal? (name dir)(car (split-input p)))
-         (get-childs-by-path dir  (cdr (split-input p))))
+(define (get-from-root-listed-path root-dir path-list)
+  (cond ((equal? (name root-dir)(car path-list))
+         (get-childs-by-path root-dir  (cdr path-list)))
         (else #f)))
 
-(define (get-by-listed-path dir list)
-  (cond ((equal? (name dir)(car list))
-         (get-childs-by-path dir  (cdr list)))
+(define (get-by-listed-path dir path-list)
+  (cond ((equal? (name dir)(car path-list))
+         (get-childs-by-path dir  (cdr path-list)))
         (else #f)))
 
                      
   
-(define c (cadr (content d)))
-
 (define (get-whithout-last list)
-  (cond ((null? (cdr list)) '())
-        (else (cons (car list) (get-whithout-last (cdr list))))))
-
+ ; (cond ((null? (cdr list)) '())
+  ;      (else (cons (car list) (get-whithout-last (cdr list))))))
+  (reverse (list-tail (reverse list) (- (length list) (- (length list) 1)))))
+  
 ;(get-parent d '("/opt/tectia" "tectia" ()))
 ;'("/opt" "opt" (("/opt/tectia" "tectia" ())))
 (define (get-parent dir current )
@@ -143,12 +150,40 @@
 ;'("/u/walsh/test" "test" (("/u/walsh/test/file.txt" "file.txt" "some text")))
 ;> (cd d c "../u")
  
-(define (cd dir current input)
-(let ([result (cd-list dir current (split-input input))])
-  (if (is-file? result) #f result)))
+;(define (cd dir current input)
+;(let ([result (cd-list dir current (split-input input))])
+ ; (if (is-file? result) #f result)))
+
+
+;(get-by-path d (up-or-down2 d c (split-input "../u")) (split-input "walsh/../walsh/test/../test/file.txt"))
+;(get-by-path d (up-or-down2 d c (split-input "../u")) (split-input "/"))
+;(get-by-path d d (split-input "/"))
+(define (get-by-path root-dir current listed-path)
+    (cond ((null? listed-path) current)
+          ((equal? #f current) #f)
+          ((equal? (car listed-path) ".."); we need to get the parrent
+           (get-by-path root-dir (get-parent root-dir current ) (cdr listed-path)))
+          ((equal? (string-ref (car listed-path) 0) #\/) ;we need to start from the root
+           (get-by-path root-dir root-dir (cdr listed-path) ))
+          (else (get-by-path root-dir (get-child-by-name current (car listed-path)) (cdr listed-path)))))
 
 
 
+(define root-dir d)
+(define current-dir root-dir)
+
+(define (cd-final input-path)
+  (let [(result (get-by-path root-dir root-dir (split-input input-path)))]
+  (if (is-folder? result) result #f)))
+
+
+(define (ls . path)
+  (if (null? path)
+      (get-names-foreach-content current-dir)
+      (get-names-foreach-content
+       (get-by-path root-dir current-dir (split-input (car path))))))
+
+  
 
 
 
