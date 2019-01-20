@@ -21,22 +21,17 @@
             "/"
             (
              ("/etc" "etc" ())
-             ("/opt" "opt"
-                     (
-                      ("/opt/tectia" "tectia" ())
-                      ))
-             ("/u" "u"
-                   (
-                    ("/u/smith" "smith" ())
-                     ("/u/walsh" "walsh"
-                                 (
-                                  ("/u/walsh/test" "test"
-                                                   (
-                                                    ("/u/walsh/test/file.txt" "file.txt" "some text")
-                                                    ))
-                                  ))
+             ("/opt" "opt" (
+                            ("/opt/tectia" "tectia" ())))
+             ("/u" "u"(
+                       ("/u/smith" "smith" ())
+                       ("/u/walsh" "walsh" (
+                                            ("/u/walsh/test" "test"(
+                                                                    ("/u/walsh/test/file.txt" "file.txt" "some text")))
+                                            ("/u/walsh/file1.txt" "file1.txt" "file1 content" )
+                                            ("/u/walsh/file2.txt" "file2.txt" "file2 content" )))
                       
-                     ))
+                       ))
 
              )))
 (define p "/u/walsh")
@@ -66,10 +61,6 @@
               (list (make-full-path dir n)
                      n
                      c)))))
-
-
-
-
 
 
 
@@ -172,6 +163,7 @@
 (define root-dir d)
 (define current-dir root-dir)
 
+
 (define (cd-final input-path)
   (let [(result (get-by-path root-dir root-dir (split-input input-path)))]
   (if (is-folder? result) result #f)))
@@ -184,6 +176,135 @@
        (get-by-path root-dir current-dir (split-input (car path))))))
 
   
+
+;(define read-a-line-as-list
+ ; (lambda ()
+  ;  (let ([c (read-char)])
+   ;  (if (equal? c #\.)
+    ;     '()
+     ;    (cons c (read-a-line-as-list))))))
+
+;(define read-a-line
+ ; (lambda ()
+  ;  (list->string (read-a-line-as-list))))
+
+;(read-a-line)
+
+
+(define (foldr op nv term l)
+  (if (null? l) nv
+      (op (term (car l)) (foldr op nv term (cdr l)))))
+
+;(append-content-of-files "/u/walsh/file1.txt" "/u/walsh/file2.txt")
+(define (append-content-of-files . path-files)
+ (foldr string-append ""  content 
+         (map (lambda (x) (get-by-path root-dir current-dir (split-input x))) path-files)))
+
+;(define (cd . files-path)
+ ; (
+
+
+(define (split-by-arrow input)
+  (string-split	 input ">" #:trim? #f  #:repeat? #f))
+
+
+(define (split-by-space input)
+  (string-split	 input " " #:trim? #t  #:repeat? #t))
+
+
+;(check-cat-type "/u/walsh/file1.txt /u/walsh/file2.txt > /u/smith/result3.txt") 
+(define (check-cat-type str)
+  (let [(input (split-by-arrow str))]
+    (cond ((= 1 (length input))  ; "file1 file2" -> to output
+           (append-content-of-files (split-by-space input)))
+          ((= 2 (length input))
+           (if (equal? #f (member "" input))
+           (cat-helper (split-by-space (car input)) (car (split-by-space (cadr input))))
+           #f))))) ; from inptut to file
+               
+               ;(create-file 
+                ;(car (split-by-space (cdr input)))
+                 ;           (append-content-of-files (split-by-space (car input)))))))))
+              
+
+(define (create-file dir nam cont)
+  (let [(file-name (car (reverse (split-input nam))))]
+  (list
+   (full-path dir)
+   (name dir)
+   (append (content dir)
+           (list (list (make-full-path dir file-name)
+                 file-name
+                 cont))))))
+
+(define (set-root-dir new-dir)
+  (set! root-dir new-dir))
+
+(define (set-current-dir new-dir)
+  (set! current-dir new-dir))
+
+;(update-root-dir root-dir '("/u/walsh/test" "test" ()))
+
+(define (update-root-dir root-dir current)
+  (cond ((not(null? (filter (lambda (x)(if  (equal? (full-path x) (full-path current)) #t #f)) (content root-dir))))
+         (list (full-path root-dir)
+                 (name root-dir)
+                 (append (filter (lambda (x)(if  (equal? (full-path x) (full-path current)) #f #t)) (content root-dir))
+                 (list current))))
+        (else (list (full-path root-dir)
+                      (name root-dir)
+                      (map (lambda (child) (update-root-dir child current)) (content root-dir))))))
+
+;(cat-helper '("/u/walsh/file1.txt" "/u/walsh/file2.txt") "/u/smith/result3.txt")
+;(cat-helper '("/u/walsh/file1.txt" "/u/walsh/file2.txt" "/u/walsh/test/file.txt") "/u/smith/result4.txt")
+(define (cat-helper listed-files result-path)
+ (set-root-dir (update-root-dir root-dir
+                  (create-file 
+                   ;root-dir
+                   (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
+                   (car (reverse (split-input result-path)))
+                   (apply append-content-of-files listed-files))))
+ (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir)))))
+
+(define (pwd . input)
+  (if (null? input)
+        (car current-dir)
+        #f))
+
+
+
+
+
+
+
+(define (cd1) (displayln "cd1"))
+(define (ls1) (displayln "ls1"))
+(define (pwd1) (displayln "pwd1"))
+(define (cat1) (displayln "cat1"))
+
+(define (input-loop)
+  (let/ec break
+    (let loop ()
+      (display "$");(display "What would you like to do? (start,stop,exit)")
+      (define command (read-line))
+      (let [(first-word (car(split-by-space command)))]
+      (cond
+        
+        [(string=? first-word "cd1") (cd1)]
+            [(string=? first-word "ls1")  (ls1) ]
+            [(string=? first-word "pwd1")  (pwd1)]
+            [(string=? command "exit")  (break)]
+            [else  (displayln "unknown command")])
+      (loop)))
+  (displayln "exited successfully...")))
+
+(input-loop)
+
+
+
+
+
+
 
 
 
