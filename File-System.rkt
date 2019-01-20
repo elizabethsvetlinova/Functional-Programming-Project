@@ -1,20 +1,15 @@
 #lang racket
-
 (define full-path car)   ;Full path to folder/file
 (define name cadr)       ;Name of the folder/file
 (define content caddr)   ;Content of the folder/file
 
 
 (define (is-folder? el)
-  (and (not ( null? (full-path el)))
-       (not( null? (name el)))
-       (not( null? (content el)))
+  (and (= 3 (length el))
        (and (list? (content el)))))
 
 (define (is-file? el)
-  (and (not ( null? (full-path el)))
-       (not( null? (name el)))
-       (not( null? (content el)))
+  (and (= 3 (length el))
        (and (string? (content el)))))
 
 (define d '("/"
@@ -163,10 +158,17 @@
 (define root-dir d)
 (define current-dir root-dir)
 
+(define (set-root-dir new-dir)
+  (set! root-dir new-dir))
+(define (set-current-dir new-dir)
+  (set! current-dir new-dir))
+
 
 (define (cd-final input-path)
   (let [(result (get-by-path root-dir root-dir (split-input input-path)))]
-  (if (is-folder? result) result #f)))
+  (if (is-folder? result)
+      (set-current-dir result)
+      #f)))
 
 
 (define (ls . path)
@@ -175,10 +177,14 @@
       (get-names-foreach-content
        (get-by-path root-dir current-dir (split-input (car path))))))
 
-  
+(define (pwd . input)
+  (if (null? input)
+      (car current-dir)
+      #f))
+
 
 ;(define read-a-line-as-list
- ; (lambda ()
+; (lambda ()
   ;  (let ([c (read-char)])
    ;  (if (equal? c #\.)
     ;     '()
@@ -200,10 +206,6 @@
  (foldr string-append ""  content 
          (map (lambda (x) (get-by-path root-dir current-dir (split-input x))) path-files)))
 
-;(define (cd . files-path)
- ; (
-
-
 (define (split-by-arrow input)
   (string-split	 input ">" #:trim? #f  #:repeat? #f))
 
@@ -216,16 +218,18 @@
 (define (check-cat-type str)
   (let [(input (split-by-arrow str))]
     (cond ((= 1 (length input))  ; "file1 file2" -> to output
-           (append-content-of-files (split-by-space input)))
+           (apply append-content-of-files (split-by-space (car input))))
           ((= 2 (length input))
            (if (equal? #f (member "" input))
-           (cat-helper (split-by-space (car input)) (car (split-by-space (cadr input))))
-           #f))))) ; from inptut to file
+               (cat-files-result (split-by-space (car input)) (car (split-by-space (cadr input))))
+               (cat-input-result  (car (split-by-space (cadr input))) )  ))))) ; from inptut to file
                
                ;(create-file 
                 ;(car (split-by-space (cdr input)))
                  ;           (append-content-of-files (split-by-space (car input)))))))))
               
+
+
 
 (define (create-file dir nam cont)
   (let [(file-name (car (reverse (split-input nam))))]
@@ -237,11 +241,6 @@
                  file-name
                  cont))))))
 
-(define (set-root-dir new-dir)
-  (set! root-dir new-dir))
-
-(define (set-current-dir new-dir)
-  (set! current-dir new-dir))
 
 ;(update-root-dir root-dir '("/u/walsh/test" "test" ()))
 
@@ -257,24 +256,32 @@
 
 ;(cat-helper '("/u/walsh/file1.txt" "/u/walsh/file2.txt") "/u/smith/result3.txt")
 ;(cat-helper '("/u/walsh/file1.txt" "/u/walsh/file2.txt" "/u/walsh/test/file.txt") "/u/smith/result4.txt")
-(define (cat-helper listed-files result-path)
- (set-root-dir (update-root-dir root-dir
-                  (create-file 
-                   ;root-dir
-                   (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
-                   (car (reverse (split-input result-path)))
-                   (apply append-content-of-files listed-files))))
- (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir)))))
+(define (cat-files-result listed-files result-path)
+  (set-root-dir (update-root-dir root-dir
+                                 (create-file 
+                                  ;root-dir
+                                  (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
+                                  (car (reverse (split-input result-path)))
+                                  (apply append-content-of-files listed-files))))
+  (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir)))))
 
-(define (pwd . input)
-  (if (null? input)
-        (car current-dir)
-        #f))
+(define (cat-input-result result-path)
+  (set-root-dir (update-root-dir root-dir
+                                 (create-file 
+                                         (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
+                                         (car (reverse (split-input result-path)))
+                                         (get-content-from-input))))
+  (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir)))))
 
 
-
-
-
+(define (get-content-from-input)
+  (define (helper)
+    (let ([c (read-char)])
+      (if (equal? c #\.)
+          '()
+          (cons c (helper)))))
+  (string-append (list->string (helper)) "."))
+  
 
 
 (define (cd1) (displayln "cd1"))
@@ -298,7 +305,7 @@
       (loop)))
   (displayln "exited successfully...")))
 
-(input-loop)
+;(input-loop)
 
 
 
@@ -314,6 +321,42 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               
+
+
+
+
+
+
+  
 
 
 
