@@ -176,21 +176,6 @@
       (car current-dir)
       #f))
 
-
-;(define read-a-line-as-list
-; (lambda ()
-;  (let ([c (read-char)])
-;  (if (equal? c #\.)
-;     '()
-;    (cons c (read-a-line-as-list))))))
-
-;(define read-a-line
-; (lambda ()
-;  (list->string (read-a-line-as-list))))
-
-;(read-a-line)
-
-
 (define (foldr op nv term l)
   (if (null? l) nv
       (op (term (car l)) (foldr op nv term (cdr l)))))
@@ -253,7 +238,6 @@
 (define (cat-files-result listed-files result-path)
   (set-root-dir (update-root-dir root-dir
                                  (create-file 
-                                  ;root-dir
                                   (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
                                   (car (reverse (split-input result-path)))
                                   (apply append-content-of-files listed-files))))
@@ -309,9 +293,7 @@
     (let loop ()
       (display "$");
       (define command (read-line))
-      ;(let [(first-word (car(split-by-space command)))]
       (cond
-        
         [(equal? (car(split-by-space command)) "ls")
          (let [(parameters (substring command 2 (string-length command)))]
            (if (equal? parameters "")
@@ -334,11 +316,13 @@
          ]
         [(equal? (car (split-by-space command)) "rm")
          (let [(parameters  (substring command 2 (string-length command)))]
-            (rm (car( split-by-space parameters))))
+           (rm (car( split-by-space parameters))))
          ]
+        
         [(equal? command "exit")  (break)]
+        
         [else  (displayln "unknown command")])
       (loop))
     (displayln "exited successfully...")))
 
-;(input-loop)
+(input-loop)
