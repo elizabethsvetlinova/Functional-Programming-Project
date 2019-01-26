@@ -1,4 +1,25 @@
 #lang racket
+; After running the code,the terminal will be ready for unix commands(ls, cd,pwd,cat,rm and exit)
+;The rood directory is defined as tree below - d. The first member is the full path to the element
+;The second element is the name of the element and the third member is the content of the element.
+;Depends of the type of the content, elements are files or folders.
+
+; Examples 
+;ls
+;ls /u
+;cd /u/walsh/../smith/../walsh
+;pwd
+;ls
+;cat  file1.txt file2.txt >/etc/result.txt
+;ls /etc
+;cd ..
+;rm smith
+;ls
+;rm /u/walsh/file2.txt
+;ls /u/walsh
+;exit
+
+
 (define full-path car)   ;Full path to folder/file
 (define name cadr)       ;Name of the folder/file
 (define content caddr)   ;Content of the folder/file
@@ -286,14 +307,28 @@
       (displayln 'ERROR)
       (displayln (apply string-append (map (lambda (x) (string-append x " ")) msg)))
       ))
-      
+
+(define (cat-helper input)
+  (let [(result-path  (cadr (split-by-arrow (substring input 2 (string-length input)))))]
+    (let[(content-from-input   (get-content-from-input))]
+      (set-root-dir (update-root-dir root-dir
+                                     (create-file 
+                                      (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
+                                      (car (reverse (split-input result-path)))
+                                      content-from-input)))
+      (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir)))))))
+  
+         
+                    
 
 (define (input-loop)
   (let/ec break
     (let loop ()
       (display "$");
       (define command (read-line))
-      (cond
+;      (displayln command)
+      (cond        
+        [(equal? (split-by-space command) '()) (loop)]
         [(equal? (car(split-by-space command)) "ls")
          (let [(parameters (substring command 2 (string-length command)))]
            (if (equal? parameters "")
@@ -318,6 +353,12 @@
          (let [(parameters  (substring command 2 (string-length command)))]
            (rm (car( split-by-space parameters))))
          ]
+        [(equal? (car (split-by-space command)) "cat2")
+         (cat-helper command)
+         (read-line)
+         (set! command "")
+         ]
+
         
         [(equal? command "exit")  (break)]
         
