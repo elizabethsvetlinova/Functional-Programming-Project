@@ -6,6 +6,8 @@
 
 ; Examples 
 ;ls
+;cat >/u/input.txt
+;write file content ending with '.'
 ;ls /u
 ;cd /u/walsh/../smith/../walsh
 ;pwd
@@ -222,9 +224,22 @@
           ((= 2 (length input))
            (if (equal? #f (member "" input))
                (cat-files-result (split-by-space (car input)) (car (split-by-space (cadr input))))
-               (cat-input-result  (car (split-by-space (cadr input))) )  ))))) ; from inptut to file
+               (cat-helper str)  ))))) ; from inptut to file
                
 
+(define (cat-helper input)
+  (let [(result-path  (cadr (split-by-arrow input)))]
+    (let[(content-from-input   (get-content-from-input))]
+      (set-root-dir (update-root-dir root-dir
+                                     (create-file 
+                                      (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
+                                      (car (reverse (split-input result-path)))
+                                      content-from-input)))
+      (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir))))))
+  
+  (read-line)
+         
+  )
 
 (define (create-file dir nam cont)
   (let [(file-name (car (reverse (split-input nam))))]
@@ -240,7 +255,6 @@
 ;(update-root-dir root-dir '("/u/walsh/test" "test" ()))
 
 (define (update-root-dir root-dir current)
-  ;  (display current)
   (cond ((equal? "/"  (full-path current))
          (list  (full-path root-dir)
                 (name root-dir)
@@ -308,15 +322,6 @@
       (displayln (apply string-append (map (lambda (x) (string-append x " ")) msg)))
       ))
 
-(define (cat-helper input)
-  (let [(result-path  (cadr (split-by-arrow (substring input 2 (string-length input)))))]
-    (let[(content-from-input   (get-content-from-input))]
-      (set-root-dir (update-root-dir root-dir
-                                     (create-file 
-                                      (get-by-path root-dir current-dir (get-whithout-last (split-input result-path)))
-                                      (car (reverse (split-input result-path)))
-                                      content-from-input)))
-      (set-current-dir (get-by-path root-dir root-dir (split-input (full-path current-dir)))))))
   
          
                     
@@ -326,9 +331,8 @@
     (let loop ()
       (display "$");
       (define command (read-line))
-;      (displayln command)
       (cond        
-        [(equal? (split-by-space command) '()) (loop)]
+        
         [(equal? (car(split-by-space command)) "ls")
          (let [(parameters (substring command 2 (string-length command)))]
            (if (equal? parameters "")
@@ -341,10 +345,11 @@
            
         [(equal? (car(split-by-space command)) "cd")
          (cd (car (split-by-space (substring command 2 (string-length command)))))
+         (set! command "")
          ]
 
         [(equal? (car (split-by-space command)) "cat")
-         (let [(result (cat  (substring command 3 (string-length command))))]
+         (let [(result (cat  (substring command 4 (string-length command))))]
            (if (string? result)
                (displayln result)
                (displayln "")))
@@ -353,15 +358,9 @@
          (let [(parameters  (substring command 2 (string-length command)))]
            (rm (car( split-by-space parameters))))
          ]
-        [(equal? (car (split-by-space command)) "cat2")
-         (cat-helper command)
-         (read-line)
-         (set! command "")
-         ]
-
         
         [(equal? command "exit")  (break)]
-        
+        [(equal? (split-by-space command) '()) (loop)]
         [else  (displayln "unknown command")])
       (loop))
     (displayln "exited successfully...")))
